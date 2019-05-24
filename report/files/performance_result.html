@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>性能测试报告</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container" style="width:1600px">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2 class="text-capitalize">性能测试报告</h2>
+                <p class='attribute'><strong>Start Time: </strong>2018-12-29_15:09:55</p>
+                <p class='attribute'><strong>Duration: </strong>91秒</p>
+                <p class='attribute'><strong>Device memory: </strong>8G</p>
+                <p class='attribute'><strong>Each Case Run Time: </strong>1800秒</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12 col-sm-10 col-md-10">
+                <table class='table table-hover table-responsive'>
+                    <thead>
+                        <tr>
+                            <th>Perf</th>
+                            <th>Status</th>
+                            <th>TPS</th>
+                            <th>CPU(%)</th>
+                            <th>内存(%)</th>
+                            <th>带宽上行(Mb/s)</th>
+                            <th>带宽下行(Mb/s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr class='success'>
+                                <td>cbft_1_node100线程100ms延时</td>
+                                <td>
+                                    
+                                    Success
+                                       
+                                </td>
+                            
+                                <td>213.87</td>
+                                <td>32.11</td>
+                                <td>2.17</td>
+                                <td>0.34</td>
+                                <td>0.62</td>
+                            
+                                <td>&nbsp<button class="btn btn-default btn-xs">View</button></td>
+                            </tr>
+                            
+                            <tr style="display:none;">
+                                    <td>
+                                        
+                                        <img src="C:\Program Files (x86)\Jenkins\workspace\platon_go_performance\performance\report\cpu\device204-100-60-2018-12-29-15-11-13.png" style="width: 1000px;">
+                                        
+                                        <img src="C:\Program Files (x86)\Jenkins\workspace\platon_go_performance\performance\report\tps\tps-100-60-2018-12-29-15-11-14.png" style="width: 1000px;">
+                                        
+                                    </td>
+                            </tr>
+                            
+                        
+                            <tr class='danger'>
+                                <td>wasm_1_node100线程100ms延时</td>
+                                <td>
+                                    
+                                    Error
+                                       
+                                </td>
+                            
+                                <td>无</td>
+                                <td>无</td>
+                                <td>无</td>
+                                <td>无</td>
+                                <td>无</td>
+                            
+                                <td>&nbsp<button class="btn btn-default btn-xs">View</button></td>
+                            </tr>
+                            
+                            <tr style="display:none;">
+                                <td>
+                                    <p>合约无法调用成功</p>
+                                </td>
+                            </tr>
+                            
+                        
+                        <tr>
+                            <td>
+                                Total Tests Run: 1
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('td').on('click', '.btn', function (e) {
+                e.preventDefault();
+                var $this = $(this);
+                var $nextRow = $this.closest('tr').next('tr');
+                $nextRow.slideToggle("fast");
+                $this.text(function (i, text) {
+                    if (text === 'View') {
+                        return 'Hide';
+                    } else {
+                        return 'View';
+                    };
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

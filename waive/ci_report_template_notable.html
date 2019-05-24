@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>测试报告</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> <style type="text/css" media="screen">
+  body {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  pre {
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow: auto;
+    white-space: pre-wrap
+  }
+
+  h1 {
+    margin-top: 2ex;
+	margin-left: 1em;
+    font-size: 16pt;
+    color: gray
+  }
+  
+  .heading {
+    margin-top: 0;
+    margin-bottom: 5ex
+  }
+
+  .heading .attribute {
+    margin-top: 1ex;
+    margin-bottom: 0;
+	margin-left: 2em
+  }
+
+  .heading .description {
+    margin-top: 4ex;
+    margin-bottom: 6ex
+  }
+
+  a.popup_link:hover {
+    color: red
+  }
+
+  .popup_window {
+    margin-left: 3em;
+    display: block;
+    position: relative;
+    left: 0;
+    top: 0;
+    padding: 10px;
+    text-align: left;
+    font-size: 13px
+  }
+
+
+  #result_table {
+    width: 50%;
+    border-collapse: collapse;
+  }
+
+  #result_table td {
+    border: 1px solid #FFF;
+    padding: 2px;
+    min-width: 100px;
+    width: 100%
+  }
+
+  .hiddenRow {
+    display: none
+  }
+
+  .CIStep {
+    margin-left: 2em
+  }
+
+  #popup {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    display: none
+  }
+
+  #popup .bg {
+    background-color: rgba(0, 0, 0, .5);
+    width: 100%;
+    height: 100%
+  }
+
+  #popup img {
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+  }
+
+  img.pic {
+    width: 500px;
+    cursor: pointer;
+  }
+</style>
+
+<script language="javascript" type="text/javascript">
+	function showCIDetail(div_id) {
+	  var details_div = document.getElementById(div_id);
+	  var className = details_div.className;
+	  if (className != "") {
+		details_div.className = "";
+	  } else {
+		details_div.className = "hiddenRow";
+	  }
+	}
+</script>
+</head>
+
+<body>
+
+<div class='heading'>
+  <h1>构建信息</h1>
+  <p class='attribute'><strong><span>触发人员：</span></strong> {{trigger}}</p>
+  <p class='attribute'><strong><span>触发类型：</span></strong> {{actionType}}</p>
+  <p class='attribute'><strong><span>构建分支：</span></strong> {{buildBranch}}</p>
+  <p class='attribute'><strong><span>构建原因：</span></strong> {{submitDetail}}</p>
+</div>
+
+<h1>步骤详情</h1>
+<table id='result_table'>
+
+<tr id='codeCompile' class='none'>
+  <td class='passStep'  colspan='1'>
+    <div class='CIStep'><strong>代码编译</strong><a href="javascript:showCIDetail('codeCompileDetail')">{{codeCompileResult}}</a></div>
+  </td>
+</tr>
+<tr id='codeCompileDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{codeCompileDetail}}
+      <div></div>
+    </div>
+  </td>
+</tr>
+
+<tr id='codeScan' class='none'>
+  <td class='passStep'  colspan='1'>
+    <div class='CIStep'><strong>静态扫描</strong> <a href="javascript:showCIDetail('codeScanDetail')">{{codeScanResult}}</a></div>
+  </td>
+</tr>
+<tr id='codeScanDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{codeScanDetail}}
+      <div></div>
+    </div>
+  </td>
+</tr>
+
+<tr id='unitTest' class='none'>
+  <td class='errorStep'  colspan='1'>
+    <div class='CIStep'><strong>单元测试</strong> <a href="javascript:showCIDetail('unitTestDetail')">{{unitTestResult}}</a></div>
+  </td>
+</tr>
+<tr id='unitTestDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{unitTestDetail}}
+    </div>
+  </td>
+</tr>
+
+<tr id='deployment' class='none'>
+  <td class='errorStep'  colspan='1'>
+    <div class='CIStep'><strong>环境部署</strong> <a href="javascript:showCIDetail('deploymentDetail')">{{deploymentResult}}</a></div>
+  </td>
+</tr>
+<tr id='deploymentDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{deploymentDetail}}
+    </div>
+  </td>
+</tr>
+
+<tr id='functionTest' class='none'>
+  <td class='errorStep'  colspan='1'>
+    <div class='CIStep'><strong>功能基线测试</strong> <a href="javascript:showCIDetail('functionTestDetail')">{{functionTestResult}}</a></div>
+  </td>
+</tr>
+<tr id='functionTestDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{functionTestDetail}}
+  </td>
+</tr>
+
+<tr id='performanceTest' class='none'>
+  <td class='failStep'  colspan='1'>
+    <div class='CIStep'><strong>性能基线测试</strong> <a href="javascript:showCIDetail('performanceTestDetail')">{{performanceTestResult}}</a></div>
+  </td>
+</tr>
+<tr id='performanceTestDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{performanceTestDetail}}
+    </div>
+  </td>
+</tr>
+
+<tr id='stabilityTest' class='none'>
+  <td class='failStep'  colspan='1'>
+    <div class='CIStep'><strong>稳定性基线测试</strong> <a href="javascript:showCIDetail('stabilityTestDetail')">{{stabilityTestResult}}</a></div>
+	
+  </td>
+</tr>
+<tr id='stabilityTestDetail' class="">
+  <td colspan='1'>
+    <div class="popup_window">
+		{{stabilityTestDetail}}
+    </div>
+  </td>
+</tr>
+
+</table>
+
+</body>
+
+</html>

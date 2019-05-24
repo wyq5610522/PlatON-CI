@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>测试报告</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> <style type="text/css" media="screen">
+  body {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  pre {
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow: auto;
+    white-space: pre-wrap
+  }
+
+  h1 {
+    font-size: 16pt;
+    color: gray
+  }
+  
+  .heading {
+    margin-top: 0;
+    margin-bottom: 5ex
+  }
+
+  .heading .attribute {
+    margin-left: 1em;
+    margin-top: 1ex;
+    margin-bottom: 0
+  }
+
+  .heading .description {
+    margin-top: 4ex;
+    margin-bottom: 6ex
+  }
+
+  a.popup_link:hover {
+    color: red
+  }
+
+  .popup_window {
+    display: block;
+    position: relative;
+    left: 0;
+    top: 0;
+    padding: 10px;
+    background-color: #E6E6D6;
+    text-align: left;
+    font-size: 13px
+  }
+
+
+  #result_table {
+    width: 50%;
+    border-collapse: collapse;
+    border: 1px solid #EEE
+  }
+
+  #result_table td {
+    border: 1px solid #EEE;
+    padding: 2px;
+    min-width: 100px;
+    width: 100%
+  }
+
+  .PASS {
+    background-color: #D8E4BC
+  }
+
+  .FAIL {
+    background-color: #E6B8B7
+  }
+  
+  .ERROR {
+    background-color: #E6B8B7
+  }
+  
+  .NOTSUPPORT {
+    background-color: #FCD5B4
+  }
+
+  .hiddenRow {
+    display: none
+  }
+
+  .CIStep {
+    margin-left: 1em
+  }
+
+  #popup {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    display: none
+  }
+
+  #popup .bg {
+    background-color: rgba(0, 0, 0, .5);
+    width: 100%;
+    height: 100%
+  }
+
+  #popup img {
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+  }
+
+  img.pic {
+    width: 500px;
+    cursor: pointer;
+  }
+</style>
+
+<script language="javascript" type="text/javascript">
+	function showCIDetail(div_id) {
+	  var details_div = document.getElementById(div_id);
+	  var className = details_div.className;
+	  if (className != "") {
+		details_div.className = "";
+	  } else {
+		details_div.className = "hiddenRow";
+	  }
+	}
+</script>
+</head>
+
+<body>
+
+
+<div class='heading'>
+  <h1>构建信息</h1>
+  <p class='attribute'><strong><span>触发人员：</span></strong> liuxing</p>
+  <p class='attribute'><strong><span>触发类型：</span></strong> </p>
+  <p class='attribute'><strong><span>构建分支：</span></strong> </p>
+  <p class='attribute'><strong><span>构建原因：</span></strong> </p>
+</div>
+
+<h1>步骤详情</h1>
+<table id='result_table'>
+
+<tr id='codeCompile' class=''>
+  <td class='PASS'  colspan='1'>
+    <div class='CIStep'><strong>代码编译</strong></div>
+  </td>
+  <td class='PASS' align='center'>
+    <a href="javascript:showCIDetail('codeCompileDetail')">PASS</a>
+  </td>
+</tr>
+<tr id='codeCompileDetail' class="hiddenRow">
+  <td colspan='2'>
+    <div class="popup_window">
+		代码编译过程暂无详情
+    </div>
+  </td>
+</tr>
+
+<tr id='codeScan' class='hiddenRow'>
+  <td class=''  colspan='1'>
+    <div class='CIStep'><strong>静态扫描</strong></div>
+  </td>
+  <td class='' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('codeScanDetail')"></a>
+  </td>
+</tr>
+<tr id='codeScanDetail' class="hiddenRow">
+  <td colspan='2'>
+    <div class="popup_window">
+		
+    </div>
+  </td>
+</tr>
+
+<tr id='unitTest' class='hiddenRow'>
+  <td class=''  colspan='1'>
+    <div class='CIStep'><strong>单元测试</strong></div>
+  </td>
+  <td class='' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('unitTestDetail')"></a>
+  </td>
+</tr>
+<tr id='unitTestDetail' class="hiddenRow">
+  <td colspan='2'>
+    <div class="popup_window">
+		
+    </div>
+  </td>
+</tr>
+
+<tr id='deployment' class=''>
+  <td class='NOTSUPPORT'  colspan='1'>
+    <div class='CIStep'><strong>环境部署</strong></div>
+  </td>
+  <td class='NOTSUPPORT' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('deploymentDetail')">NOTSUPPORT</a>
+  </td>
+</tr>
+<tr id='deploymentDetail' class="">
+  <td colspan='2'>
+    <div class="popup_window">
+		环境部署过程暂无详情
+    </div>
+  </td>
+</tr>
+
+<tr id='functionTest' class=''>
+  <td class='PASS'  colspan='1'>
+    <div class='CIStep'><strong>功能基线测试</strong></div>
+  </td>
+  <td class='PASS' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('functionTestDetail')">PASS</a>
+  </td>
+</tr>
+<tr id='functionTestDetail' class="">
+  <td colspan='2'>
+    <div class="popup_window">
+		运行描述： </br>7 tests ran in 155.90 seconds. </br>--7 passed</br>--0 failed</br>--0 skipped
+	</div>
+  </td>
+</tr>
+
+<tr id='performanceTest' class='hiddenRow'>
+  <td class=''  colspan='1'>
+    <div class='CIStep'><strong>性能基线测试</strong></div>
+  </td>
+  <td class='' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('performanceTestDetail')"></a>
+  </td>
+</tr>
+<tr id='performanceTestDetail' class="hiddenRow">
+  <td colspan='2'>
+    <div class="popup_window">
+		
+	</div>
+  </td>
+</tr>
+
+<tr id='stabilityTest' class='hiddenRow'>
+  <td class=''  colspan='1'>
+    <div class='CIStep'><strong>稳定性基线测试</strong></div>
+  </td>
+  <td class='' align='center'>
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showCIDetail('stabilityTestDetail')"></a>
+  </td>
+</tr>
+<tr id='stabilityTestDetail' class="hiddenRow">
+  <td colspan='2'>
+    <div class="popup_window">
+		hiddenRow
+    </div>
+  </td>
+</tr>
+
+</table>
+
+</body>
+
+</html>

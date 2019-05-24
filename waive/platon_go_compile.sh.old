@@ -1,0 +1,835 @@
+#!/bin/bash
+# ${PROJECT_DIR} is /home/platon/Jenkins/workspace/platon_internal_opensource_project
+
+# 全局参数
+release_version=${release_version} # 新加入的版本号
+tag_name=${release_version} # 标签名称
+release_comment=${release_comment} # 新加入的版本的说明，即tag说明
+release_box=${release_box} # 选择的项目
+platon_mpc_branch=${platon_mpc_branch} # platon-mpc项目分支
+platon_go_branch=${platon_go_branch} # platon-go项目分支
+platon_contract_branch=${platon_contract_branch} # platon-contract项目分支
+platon_abigen_branch=${platon_abigen_branch} # platon-abigen_branch项目分支
+platon_binaryen_branch=${platon_binaryen_branch} # platon-binaryen_branch项目分支
+project_build_type=${project_build_type} # 打包类型，Debug/Release
+push_tag=${push_tag} # 是否将您输入的release_version推送到服务器
+project_dir=${PROJECT_DIR} # 默认的项目路径
+code_dir=${PROJECT_DIR}/code # 代码路径
+debug_platon_mpc_tar_named="Debug_Platon-mpc_v"${release_version} # Debug_Platon-mpc打包命名字符
+release_platon_mpc_tar_named="Release_Platon-mpc_v"${release_version} # Release_Platon-mpc打包命名字符
+debug_platon_go_tar_named="Debug_Platon-go_v"${release_version} # Debug_Platon-go打包命名字符
+release_platon_go_tar_named="Release_Platon-go_v"${release_version} # Release_Platon-go打包命名字符
+debug_platon_contract_tar_named="Debug_Platon-contract_v"${release_version} # Debug_Platon-contract打包命名字符
+release_platon_contract_tar_named="Release_Platon-contract_v"${release_version} # Release_Platon-contract打包命名字符
+debug_package_tar_named="Debug_Package_v"${release_version} # Debug_Platon-package打包命名字符
+release_package_tar_named="Release_Package_v"${release_version} # Release_Platon-package打包命名字符
+release_packages=${PROJECT_DIR}/Release-packages # 打包文件存放位置
+auth_str="_v"${tag_name}"_" # 拼接标签/版本号 认证字符串
+platon_contract_combine_dir=${code_dir}/platon-contract/external/bin # Platon-contract 项目最后的结合可执行文件存放位置
+var=0	# 打包小版本作用符
+package_url=${PACKAGE_URL} # 最后的取包地址
+
+# 传参检验
+function checkInputParams() {
+	echo "函数showInputParams()开始执行，让我看看你带了什么参数给我"
+	
+	echo "传进来的参数："
+	echo "release_box = ${release_box}"	
+	if [[ "${release_box}" = "" ]]; then
+		echo "发生错误，请选择项目进行构建" && exit 1
+	fi
+	if ([[ "${release_box}" != "MPC_native" ]] && [[ "${release_box}" != "Platon-go" ]] && [[ "${release_box}" != "Platon-contract,Platon-abigen,Platon-binaryen" ]] && [[ "${release_box}" != "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]] && [[ "${release_box}" != "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]); then
+		echo "发生错误，不可用的项目组合" && exit 1
+	fi	
+	echo "release_version = ${release_version}"                                    
+	echo "release_comment = ${release_comment}"
+	echo "platon_mpc_branch = ${platon_mpc_branch}"
+	echo "platon_go_branch = ${platon_go_branch}"
+	echo "platon_contract_branch = ${platon_contract_branch}"
+	echo "platon_abigen_branch = ${platon_abigen_branch}"
+	echo "platon_binaryen_branch = ${platon_binaryen_branch}"
+	echo "project_build_type = ${project_build_type}"
+	echo "is_push_tag = ${push_tag}"
+	echo "project_dir = ${project_dir}"
+	echo "code_dir = ${code_dir}"
+	
+	echo "函数showInputParams()执行完成，已经知道传入的参数了"
+	return 0
+}
+
+# 清除本地代存库
+function delLocalRepository() {
+	echo "开始执行函数delLocalRepository(),开始清空本地代存库code_dir"
+	
+	cd ${PROJECT_DIR}
+	
+	sudo rm -rf code
+	mkdir code
+	
+	[ $? -ne 0 ] && echo "delete local repository occured error" && exit 1
+	echo "函数delLocalRepository()已执行完成,已经清空本地代存库"
+	return 0
+}
+
+# 根据项目gitClone拉取代码
+function gitClone() {
+	echo "开始执行函数gitClone(),开始选择项目，拉取代码" 
+	
+	if [[ "${release_box}" =~ "MPC_native" ]]; then
+		cloneProject PlatON platon-mpc ${platon_mpc_branch}
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-go" ]]; then
+		cloneProject PlatON platon-go ${platon_go_branch}
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-contract" ]]; then
+		cloneProject PlatON platon-contract ${platon_contract_branch}
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-abigen" ]]; then
+		cloneProject PlatON platon-abigen ${platon_abigen_branch}
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-binaryen" ]]; then
+		cloneProject PlatON platon-binaryen ${platon_binaryen_branch}
+	fi
+	
+	echo "函数gitClone()已执行完成,已经成功拉取项目代码"
+	return 0
+}
+
+# gitClone具体实现
+function cloneProject() {
+	group=${1}
+	project=${2}
+	branch=${3}
+	echo "group is ${group},project is ${project},branch is : ${branch}"
+	git_url=http://${GITLAB_ADMIN}:${GITLAB_PWD}@${GITLAB_URL}/${group}/${project}.git
+	echo "=========${project}========="
+	cd ${code_dir}
+	if [ -d ${project} ]; then
+		cd ${project}
+		git fetch --all
+	else
+		git clone --recursive ${git_url}
+		cd ${project}
+	fi
+	
+	[ $? -ne 0 ] && echo "git cloning project occured error" && exit 1
+	
+	remote_branch=$(git branch -r)
+	tags=$(git tag)
+	if ([[ "${remote_branch}" =~ "${branch}" ]] || [[ "${tags}" =~ "${branch}" ]]); then
+		git reset --hard origin/${branch} &>/dev/null
+		git checkout ${branch} &>/dev/null
+		git log --pretty=format:"当前代码信息 [ %h - %an, %ad: %s ]" -1
+		echo ""
+		echo "=========${project}========="
+	else
+		echo "项目 ${project} 的分支或标签 ${branch} 不存在！请联系相关开发人员，创建该分支！"
+		exit 1
+		# echo "警告：项目 ${project} 的分支 ${branch} 不存在，已使用 develop 分支替代！"
+		# git reset --hard origin/develop
+	fi
+	
+}
+
+# 编译
+function projectCompile() {
+	echo "开始执行函数projectCompile(),开始打包" 
+	if [[ "${release_box}" =~ "MPC_native" ]]; then
+		echo "====MPC_native 编译时间较长，请耐心等待..===="
+		cd ${code_dir}/platon-mpc/
+		if [ ! -d build64 ]; then
+			mkdir build64
+		fi
+		cd build64
+		cmake .. -DBOOST_INCLUDEDIR=/home/platon/opt/boost_1_66_0/
+		sudo make
+		[ $? -ne 0 ] && echo "occured error when compiling MPC_native" && exit 1
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-go" ]]; then
+		cd ${code_dir}/platon-go/build
+		chmod u+x *.sh
+		cd ${code_dir}/platon-go
+		if [[ "${project_build_type}" = "Release" ]]; then
+			make all
+		else
+			make all-debug
+		fi
+		[ $? -ne 0 ] && echo "occured error when compiling Platon-go" && exit 1
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-abigen" ]]; then
+		cd ${code_dir}/platon-abigen/
+		mkdir build && cd build
+		cmake .. -DLLVM_ROOT=/home/platon/opt -DCLANG_ROOT=/home/platon/opt -DBOOST_ROOT=/home/platon/opt/boost && make
+		[ $? -ne 0 ] && echo "occured error when compiling Platon-abigen" && exit 1
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-binaryen" ]]; then
+		cd ${code_dir}/platon-binaryen/
+		mkdir build && cd build
+		cmake ../ && make
+		[ $? -ne 0 ] && echo "occured error when compiling Platon-binaryen" && exit 1
+	fi
+	
+	if [[ "${release_box}" =~ "Platon-contract" ]]; then
+		cd ${code_dir}/platon-contract/
+		mkdir external && cd external
+		mkdir bin lib
+		cp -r /home/platon/opt/lib/clang ${code_dir}/platon-contract/external/lib	
+		[ $? -ne 0 ] && echo "occured error when compiling Platon-contract" && exit 1
+	fi
+	
+	echo "函数projectCompile()已执行完成,打包完成"
+}
+
+# 打包压缩 
+function tarAndNamed() {
+	
+	echo "函数tarAndNamed()开始执行,开始压缩打包"
+	if [[ "${release_box}" = "MPC_native" ]]; then
+		files=$(ls ${release_packages}/MPC_native)
+	elif [[ "${release_box}" = "Platon-go" ]]; then
+		files=$(ls ${release_packages}/Platon-go)
+	elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+		files=$(ls ${release_packages}/Platon-package)
+	elif [[ "${release_box}" = "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+		files=$(ls ${release_packages}/Platon-package)
+	elif [[ "${release_box}" = "Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+		files=$(ls ${release_packages}/Platon-contract)
+	fi
+	if [[ "${files}" = "" ]]; then 
+		if [[ "${release_box}" = "MPC_native" ]]; then
+			cd ${release_packages}/MPC_native
+			touch Debug_Platon-mpc_vjenkins_0_20181111.tar.gz
+			files=$(ls ${release_packages}/MPC_native)
+		elif [[ "${release_box}" = "Platon-go" ]]; then
+			cd ${release_packages}/Platon-go
+			touch Debug_Platon-go_vjenkins_0_20181111.tar.gz
+			files=$(ls ${release_packages}/Platon-go)
+		elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			cd ${release_packages}/Platon-package
+			touch Debug_Platon-package_vjenkins_0_20181111.tar.gz
+			files=$(ls ${release_packages}/Platon-package)
+		elif [[ "${release_box}" = "Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			cd ${release_packages}/Platon-contract
+			touch Debug_Platon-contract_vjenkins_0_20181111.tar.gz
+			files=$(ls ${release_packages}/Platon-contract)
+		fi
+	fi	
+	
+	for filename in ${files}
+	do	
+		result=$(echo $filename | grep "${auth_str}")
+		if [[ "$result" != "" ]]; then
+			flag=`echo ${filename}|awk -F '_' '{print $4}'`
+			if [[ ${flag} -gt ${var} ]]; then 
+				var=${flag}
+			fi
+		fi
+	done
+	
+	for filename in ${files}
+	do	
+		result=$(echo $filename | grep "${auth_str}")
+		if [[ "$result" != "" ]]; then
+		    echo "这个标签以前用过，需要用小版本号进行区分"
+			echo "当前标签的小版本号为 ${var}，小版本号需要加1，进行打包"
+			let var+=1
+			if [[ "${project_build_type}" =~ "Debug" ]]; then
+				if [[ "${release_box}" = "Platon-go" ]]; then
+					debug_platon_go_tar_named=${debug_platon_go_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${debug_platon_go_tar_named}"
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d ${debug_platon_go_tar_named} ]; then
+						mkdir ${debug_platon_go_tar_named}
+					fi
+					cp ethkey platon ${debug_platon_go_tar_named}
+					tar -zcf ${debug_platon_go_tar_named}.tar.gz ${debug_platon_go_tar_named}
+					mv ${debug_platon_go_tar_named}.tar.gz ${release_packages}/Platon-go
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-go/${debug_platon_go_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				elif [[ "${release_box}" = "MPC_native" ]]; then
+					debug_platon_mpc_tar_named=${debug_platon_mpc_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${debug_platon_mpc_tar_named}"
+					cd ${code_dir}/platon-mpc/build64/lib
+					if [ ! -d ${debug_platon_mpc_tar_named} ]; then
+						mkdir ${debug_platon_mpc_tar_named}
+					fi	
+					cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 ${debug_platon_mpc_tar_named}
+					cd ${code_dir}/platon-mpc/third-code/jit/lib
+					mv libmpc-jit.so libmpc-jit.so.6
+					cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/${debug_platon_mpc_tar_named}
+					cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/${debug_platon_mpc_tar_named}
+					cd ${code_dir}/platon-mpc/build64/lib
+					tar -zcf ${debug_platon_mpc_tar_named}.tar.gz ${debug_platon_mpc_tar_named}
+					mv ${debug_platon_mpc_tar_named}.tar.gz ${release_packages}/MPC_native
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/MPC_native/${debug_platon_mpc_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+					debug_package_tar_named=${debug_package_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${debug_package_tar_named}"
+					cd ${code_dir}
+					if [ ! -d Platon-package ]; then
+						mkdir Platon-package
+					fi
+					
+					cd ${code_dir}/platon-mpc/build64/lib
+					if [ ! -d MPC_native ]; then
+						mkdir MPC_native
+					fi
+					cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 MPC_native
+					cd ${code_dir}/platon-mpc/third-code/jit/lib
+					mv libmpc-jit.so libmpc-jit.so.6
+					cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/MPC_native
+					cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/MPC_native
+					cd ${code_dir}/platon-mpc/build64/lib
+					tar -zcf MPC_native.tar.gz MPC_native
+					mv MPC_native.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d Platon-go ]; then
+						mkdir Platon-go
+					fi
+					cp ethkey platon Platon-go
+					tar -zcf Platon-go.tar.gz Platon-go
+					mv Platon-go.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf Platon-contract.tar.gz platon-contract
+					mv Platon-contract.tar.gz ${code_dir}/Platon-package
+					
+					tar -zcf ${debug_package_tar_named}.tar.gz Platon-package
+					mv ${debug_package_tar_named}.tar.gz ${release_packages}/Platon-package
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-package/${debug_package_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				elif [[ "${release_box}" = "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+					debug_package_tar_named=${debug_package_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${debug_package_tar_named}"
+					cd ${code_dir}
+					if [ ! -d Platon-package ]; then
+						mkdir Platon-package
+					fi
+							
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d Platon-go ]; then
+						mkdir Platon-go
+					fi
+					cp ethkey platon Platon-go
+					tar -zcf Platon-go.tar.gz Platon-go
+					mv Platon-go.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf Platon-contract.tar.gz platon-contract
+					mv Platon-contract.tar.gz ${code_dir}/Platon-package
+					
+					tar -zcf ${debug_package_tar_named}.tar.gz Platon-package
+					mv ${debug_package_tar_named}.tar.gz ${release_packages}/Platon-package
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-package/${debug_package_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				else	
+					debug_platon_contract_tar_named=${debug_platon_contract_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${debug_platon_contract_tar_named}"
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf ${debug_platon_contract_tar_named}.tar.gz platon-contract
+					mv ${debug_platon_contract_tar_named}.tar.gz ${release_packages}/Platon-contract
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-contract/${debug_platon_contract_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				fi
+			else
+				if [[ "${release_box}" = "Platon-go" ]]; then
+					release_platon_go_tar_named=${release_platon_go_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${release_platon_go_tar_named}"
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d ${release_platon_go_tar_named} ]; then
+						mkdir ${release_platon_go_tar_named}
+					fi
+					cp ethkey platon ${release_platon_go_tar_named}
+					tar -zcf ${release_platon_go_tar_named}.tar.gz ${release_platon_go_tar_named}
+					mv ${release_platon_go_tar_named}.tar.gz ${release_packages}/Platon-go
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-go/${release_platon_go_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				elif [[ "${release_box}" = "MPC_native" ]]; then
+					release_platon_mpc_tar_named=${release_platon_mpc_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${release_platon_mpc_tar_named}"
+					cd ${code_dir}/platon-mpc/build64/lib
+					if [ ! -d ${release_platon_mpc_tar_named} ]; then
+						mkdir ${release_platon_mpc_tar_named}
+					fi	
+					cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 ${release_platon_mpc_tar_named}
+					cd ${code_dir}/platon-mpc/third-code/jit/lib
+					mv libmpc-jit.so libmpc-jit.so.6
+					cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/${release_platon_mpc_tar_named}
+					cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/${release_platon_mpc_tar_named}
+					cd ${code_dir}/platon-mpc/build64/lib
+					tar -zcf ${release_platon_mpc_tar_named}.tar.gz ${release_platon_mpc_tar_named}
+					mv ${release_platon_mpc_tar_named}.tar.gz ${release_packages}/MPC_native
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/MPC_native/${release_platon_mpc_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0 
+				elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+					release_package_tar_named=${release_package_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${release_package_tar_named}"
+					cd ${code_dir}
+					if [ ! -d Platon-package ]; then
+						mkdir Platon-package
+					fi
+					
+					cd ${code_dir}/platon-mpc/build64/lib
+					if [ ! -d MPC_native ]; then
+						mkdir MPC_native
+					fi					
+					cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 MPC_native
+					cd ${code_dir}/platon-mpc/third-code/jit/lib
+					mv libmpc-jit.so libmpc-jit.so.6
+					cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/MPC_native
+					cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/MPC_native
+					cd ${code_dir}/platon-mpc/build64/lib
+					tar -zcf MPC_native.tar.gz MPC_native
+					mv MPC_native.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d Platon-go ]; then
+						mkdir Platon-go
+					fi
+					cp ethkey platon Platon-go
+					tar -zcf Platon-go.tar.gz Platon-go
+					mv Platon-go.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf Platon-contract.tar.gz platon-contract
+					mv Platon-contract.tar.gz ${code_dir}/Platon-package
+					
+					tar -zcf ${release_package_tar_named}.tar.gz Platon-package
+					mv ${release_package_tar_named}.tar.gz ${release_packages}/Platon-package
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-package/${release_package_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				elif [[ "${release_box}" = "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+					release_package_tar_named=${release_package_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${release_package_tar_named}"
+					cd ${code_dir}
+					if [ ! -d Platon-package ]; then
+						mkdir Platon-package
+					fi
+					
+					cd ${code_dir}/platon-go/build/bin
+					if [ ! -d Platon-go ]; then
+						mkdir Platon-go
+					fi
+					cp ethkey platon Platon-go
+					tar -zcf Platon-go.tar.gz Platon-go
+					mv Platon-go.tar.gz ${code_dir}/Platon-package
+					
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf Platon-contract.tar.gz platon-contract
+					mv Platon-contract.tar.gz ${code_dir}/Platon-package
+					
+					tar -zcf ${release_package_tar_named}.tar.gz Platon-package
+					mv ${release_package_tar_named}.tar.gz ${release_packages}/Platon-package
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-package/${release_package_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				else
+					release_platon_contract_tar_named=${release_platon_contract_tar_named}"_"${var}"_"$(date "+%y%m%d%H%M")
+					echo "${release_platon_contract_tar_named}"
+					cd ${code_dir}/platon-abigen/build
+					cp platon-abigen ${platon_contract_combine_dir}
+					cd ${code_dir}/platon-binaryen/build/bin
+					cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+					cd /home/platon/opt/bin
+					cp clang llc llvm-link ${platon_contract_combine_dir}
+					cd ${code_dir}
+					tar -zcf ${release_platon_contract_tar_named}.tar.gz platon-contract
+					mv ${release_platon_contract_tar_named}.tar.gz ${release_packages}/Platon-contract
+					[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+					package_url=${package_url}/Platon-contract/${release_platon_contract_tar_named}.tar.gz
+					echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+					return 0
+				fi
+			fi	
+		else
+			continue
+		fi	
+	done
+	
+	echo "这个标签是第一次使用，直接压缩吧"
+	if [[ "${project_build_type}" =~ "Debug" ]]; then
+		if [[ "${release_box}" = "Platon-go" ]]; then
+			debug_platon_go_tar_named=${debug_platon_go_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${debug_platon_go_tar_named}"
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d ${debug_platon_go_tar_named} ]; then
+				mkdir ${debug_platon_go_tar_named}
+			fi
+			cp ethkey platon ${debug_platon_go_tar_named}
+			tar -zcf ${debug_platon_go_tar_named}.tar.gz ${debug_platon_go_tar_named}
+			mv ${debug_platon_go_tar_named}.tar.gz ${release_packages}/Platon-go
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-go/${debug_platon_go_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		elif [[ "${release_box}" = "MPC_native" ]]; then
+			debug_platon_mpc_tar_named=${debug_platon_mpc_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${debug_platon_mpc_tar_named}"
+			cd ${code_dir}/platon-mpc/build64/lib
+			if [ ! -d ${debug_platon_mpc_tar_named} ]; then
+				mkdir ${debug_platon_mpc_tar_named}
+			fi	
+			cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 ${debug_platon_mpc_tar_named}
+			cd ${code_dir}/platon-mpc/third-code/jit/lib
+			mv libmpc-jit.so libmpc-jit.so.6
+			cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/${debug_platon_mpc_tar_named}
+			cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/${debug_platon_mpc_tar_named}
+			cd ${code_dir}/platon-mpc/build64/lib
+			tar -zcf ${debug_platon_mpc_tar_named}.tar.gz ${debug_platon_mpc_tar_named}
+			mv ${debug_platon_mpc_tar_named}.tar.gz ${release_packages}/MPC_native
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/MPC_native/${debug_platon_mpc_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			debug_package_tar_named=${debug_package_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${debug_package_tar_named}"
+			cd ${code_dir}
+			if [ ! -d Platon-package ]; then
+				mkdir Platon-package
+			fi
+			
+			cd ${code_dir}/platon-mpc/build64/lib
+			if [ ! -d MPC_native ]; then
+				mkdir MPC_native
+			fi
+	
+			cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 MPC_native
+			cd ${code_dir}/platon-mpc/third-code/jit/lib
+			mv libmpc-jit.so libmpc-jit.so.6
+			cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/MPC_native
+			cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/MPC_native
+			cd ${code_dir}/platon-mpc/build64/lib
+			tar -zcf MPC_native.tar.gz MPC_native
+			mv MPC_native.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d Platon-go ]; then
+				mkdir Platon-go
+			fi
+			cp ethkey platon Platon-go
+			tar -zcf Platon-go.tar.gz Platon-go
+			mv Platon-go.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf Platon-contract.tar.gz platon-contract
+			mv Platon-contract.tar.gz ${code_dir}/Platon-package
+			
+			tar -zcf ${debug_package_tar_named}.tar.gz Platon-package
+			mv ${debug_package_tar_named}.tar.gz ${release_packages}/Platon-package
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-package/${debug_package_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		elif [[ "${release_box}" = "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			debug_package_tar_named=${debug_package_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${debug_package_tar_named}"
+			cd ${code_dir}
+			if [ ! -d Platon-package ]; then
+				mkdir Platon-package
+			fi
+			
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d Platon-go ]; then
+				mkdir Platon-go
+			fi
+			cp ethkey platon Platon-go
+			tar -zcf Platon-go.tar.gz Platon-go
+			mv Platon-go.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf Platon-contract.tar.gz platon-contract
+			mv Platon-contract.tar.gz ${code_dir}/Platon-package
+			
+			tar -zcf ${debug_package_tar_named}.tar.gz Platon-package
+			mv ${debug_package_tar_named}.tar.gz ${release_packages}/Platon-package
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-package/${debug_package_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		else
+			debug_platon_contract_tar_named=${debug_platon_contract_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${debug_platon_contract_tar_named}"
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf ${debug_platon_contract_tar_named}.tar.gz platon-contract
+			mv ${debug_platon_contract_tar_named}.tar.gz ${release_packages}/Platon-contract
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-contract/${debug_platon_contract_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		fi
+	else
+		if [[ "${release_box}" = "Platon-go" ]]; then
+			release_platon_go_tar_named=${release_platon_go_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${release_platon_go_tar_named}"
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d ${release_platon_go_tar_named} ]; then
+				mkdir ${release_platon_go_tar_named}
+			fi
+			cp ethkey platon ${release_platon_go_tar_named}
+			tar -zcf ${release_platon_go_tar_named}.tar.gz ${release_platon_go_tar_named}
+			mv ${release_platon_go_tar_named}.tar.gz ${release_packages}/Platon-go
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-go/${release_platon_go_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		elif [[ "${release_box}" = "MPC_native" ]]; then
+			release_platon_mpc_tar_named=${release_platon_mpc_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${release_platon_mpc_tar_named}"
+			cd ${code_dir}/platon-mpc/build64/lib
+			if [ ! -d ${release_platon_mpc_tar_named} ]; then
+				mkdir ${release_platon_mpc_tar_named}
+			fi	
+			cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 ${release_platon_mpc_tar_named}
+			cd ${code_dir}/platon-mpc/third-code/jit/lib
+			mv libmpc-jit.so libmpc-jit.so.6
+			cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/${release_platon_mpc_tar_named}
+			cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/${release_platon_mpc_tar_named}
+			cd ${code_dir}/platon-mpc/build64/lib
+			tar -zcf ${release_platon_mpc_tar_named}.tar.gz ${release_platon_mpc_tar_named}
+			mv ${release_platon_mpc_tar_named}.tar.gz ${release_packages}/MPC_native
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/MPC_native/${release_platon_mpc_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0  
+		elif [[ "${release_box}" = "MPC_native,Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			release_package_tar_named=${release_package_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${release_package_tar_named}"
+			cd ${code_dir}
+			if [ ! -d Platon-package ]; then
+				mkdir Platon-package
+			fi
+			
+			cd ${code_dir}/platon-mpc/build64/lib
+			if [ ! -d MPC_native ]; then
+				mkdir MPC_native
+			fi
+			cp libmpc_vm_core.so libmpc_vm_service.so libmpc_vm_platonsdk.so libprotobuf.so.3.6.1 libprotobuf-lite.so.3.6.1 MPC_native
+			cd ${code_dir}/platon-mpc/third-code/jit/lib
+			mv libmpc-jit.so libmpc-jit.so.6
+			cp libmpc-jit.so.6 ${code_dir}/platon-mpc/build64/lib/MPC_native
+			cp /home/platon/mpc-depend/lib/* ${code_dir}/platon-mpc/build64/lib/MPC_native
+			cd ${code_dir}/platon-mpc/build64/lib
+			tar -zcf MPC_native.tar.gz MPC_native
+			mv MPC_native.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d Platon-go ]; then
+				mkdir Platon-go
+			fi
+			cp ethkey platon Platon-go
+			tar -zcf Platon-go.tar.gz Platon-go
+			mv Platon-go.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf Platon-contract.tar.gz platon-contract
+			mv Platon-contract.tar.gz ${code_dir}/Platon-package
+			
+			tar -zcf ${release_package_tar_named}.tar.gz Platon-package
+			mv ${release_package_tar_named}.tar.gz ${release_packages}/Platon-package
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-package/${release_package_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		elif [[ "${release_box}" = "Platon-go,Platon-contract,Platon-abigen,Platon-binaryen" ]]; then
+			release_package_tar_named=${release_package_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${release_package_tar_named}"
+			cd ${code_dir}
+			if [ ! -d Platon-package ]; then
+				mkdir Platon-package
+			fi
+			
+			cd ${code_dir}/platon-go/build/bin
+			if [ ! -d Platon-go ]; then
+				mkdir Platon-go
+			fi
+			cp ethkey platon Platon-go
+			tar -zcf Platon-go.tar.gz Platon-go
+			mv Platon-go.tar.gz ${code_dir}/Platon-package
+			
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf Platon-contract.tar.gz platon-contract
+			mv Platon-contract.tar.gz ${code_dir}/Platon-package
+			
+			tar -zcf ${release_package_tar_named}.tar.gz Platon-package
+			mv ${release_package_tar_named}.tar.gz ${release_packages}/Platon-package
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-package/${release_package_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		else
+			release_platon_contract_tar_named=${release_platon_contract_tar_named}"_1_"$(date "+%y%m%d%H%M")
+			echo "${release_platon_contract_tar_named}"
+			cd ${code_dir}/platon-abigen/build
+			cp platon-abigen ${platon_contract_combine_dir}
+			cd ${code_dir}/platon-binaryen/build/bin
+			cp platon-s2wasm platon-wast2wasm ${platon_contract_combine_dir}
+			cd /home/platon/opt/bin
+			cp clang llc llvm-link ${platon_contract_combine_dir}
+			cd ${code_dir}
+			tar -zcf ${release_platon_contract_tar_named}.tar.gz platon-contract
+			mv ${release_platon_contract_tar_named}.tar.gz ${release_packages}/Platon-contract
+			[ $? -ne 0 ] && echo "occured error when packaging and taring" && exit 1
+			package_url=${package_url}/Platon-contract/${release_platon_contract_tar_named}.tar.gz
+			echo "函数tarAndNamed()结束，打包成功,取包地址为：${package_url}"
+			return 0
+		fi
+	fi
+}
+
+# 标签处理
+function tagDeal() {
+	echo "开始执行函数newTag()，开始处理标签"
+
+	checkTag
+	
+	echo "结束执行函数newTag()，标签处理完毕"
+	return 0
+}
+
+# 标签判断
+function checkTag() {
+	echo "检测项目标签是否存在"
+	
+	cd ${code_dir}
+	dirs=$(ls)
+	for project in ${dirs[@]}; 
+	do
+		cd ${code_dir}/${project}
+		if [ -d .git ]; then
+			tags="$(git tag)"
+			echo "项目 ${project} 所有标签: ${tags}"
+			if echo "${tags[@]}" | grep -Fwx ${tag_name} &>/dev/null; then
+				echo "项目 ${project} 标签${tag_name}已存在！"
+				echo "标签将不上传至服务器"
+				return 0
+			fi
+			echo "项目 ${project} 标签${tag_name}不存在，项目标签检测通过,将创建新标签"
+			
+			tag ${project}
+	
+		fi
+	done		
+}
+
+# 创建新标签
+function tag() {
+	cd ${code_dir}/$1
+	
+	# 在开始检测了标签，不再需要检测。
+	# if [[ "$(git tag | grep -Fwx $tag_name)" == "" ]]; then
+	echo "开始打附注标签：${tag_name}"
+	git tag -a ${tag_name} -m "Tag by Jenkins: ${release_comment}"
+	[ $? -ne 0 ] && echo "tag(): $1: git tag faile" && exit 1
+
+	git push origin ${tag_name}
+	[ $? -ne 0 ] && echo "tag(): $1: git push tag faile" && exit 1
+	echo "标签发布成功"
+	# else
+	# 	echo "tag(): $1: tag name: $tag_name already exist" && exit 1
+	# fi
+	
+}
+
+# main函数
+main() { 
+	echo -e "\n\n\n- - - - - - ✂ - - - - - - I am a sexy dividing line - - - - - - ✂ - - - - - -"
+	echo "↓↓↓★☆■●★☆■●★☆■●★☆■●=== jenkins_platon脚本开始执行 ===★☆■●★☆■●★☆■●★☆■●↓↓↓"
+	checkInputParams
+	delLocalRepository
+	gitClone
+	if ${push_tag}; then
+		tagDeal
+	fi
+	projectCompile
+	tarAndNamed
+	echo "↑↑↑★☆■●★☆■●★☆■●★☆■●=== jenkins_platon脚本执行完毕 ===★☆■●★☆■●★☆■●★☆■●↑↑↑"
+}
+
+main 
