@@ -1,23 +1,23 @@
-from socket import *
+#!/usr/bin/python3.5
+# -*- coding: UTF-8 -*-
 import json
 import requests
+import socket
+
 
 net = '192.168.18.31'
 local = '127.0.0.1'
 host = net
 port = 18080
-server = socket(AF_INET, SOCK_STREAM)
-server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind((host, port))
 server.listen(5)
-print ('Service port:', port)
-
 
 while True:
     sock, addr = server.accept()
     byte = sock.recv(40960)
     str = bytes.decode(byte)
-    # print('str:', str)
     list = str.split('\r\n')
     dict = {}
     dict['method'] = list[0].split(' / ')[0]
@@ -34,8 +34,7 @@ while True:
             data = bytes.decode(sock.recv(40960))
             data_all = data_all + data
         dict['data'] = data_all
-        # print(dict)
-        content = b'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
+        content = 'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
         print('POST Response: 200')
 
@@ -79,7 +78,7 @@ while True:
             params = 'token=' + token + '&project_owner=' + project_owner + '&project_name=' + project_name + '&project_branch=' + build_branch
             response = requests.get(url=url, params=params)
             print('Jenkins Response:', response)
-
+            
         elif dict['X-GitHub-Event'] == 'push':
             print('GitHub Event Is Push')
             data_json = json.loads(dict['data'])
@@ -122,11 +121,11 @@ while True:
             print('Jenkins Response:', response)
 
     elif dict['method'] == 'GET':
-        content = b'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
+        content = 'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
         print('GET Response: 200')
     else:
-        content = b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
+        content = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
         print('Unknow Response: 404')
     sock.close()
