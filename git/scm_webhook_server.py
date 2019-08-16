@@ -127,7 +127,8 @@ while True:
         sock.sendall(content)
         print('GET Response: 200')
     else:
-        content = b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
+        # content = b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
+        content = b'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
-        print('Unknow Response: 404')
+        print('Unknow Response: 200')
     sock.close()
