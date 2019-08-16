@@ -8,7 +8,8 @@ net = '192.168.18.31'
 # local = '127.0.0.1'
 host = net
 port = 18080
-url = 'http://192.168.18.31:8080/job/PlatON_GO.github/buildWithParameters'
+# url = 'http://192.168.18.31:8080/job/PlatON/job/RUN/buildWithParameters'
+url = 'http://192.168.18.31:8080/job/Testing/job/Test_Github/buildWithParameters'
 token = '1165670d92241176b11f64f05335843b3b'
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
