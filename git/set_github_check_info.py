@@ -3,23 +3,23 @@
 import requests
 import sys
 
-project_owner = sys.argv[1]
-project_name = sys.argv[2]
-checker_name = sys.argv[3]
-checker_token = sys.argv[4]
-commit_SHA = sys.argv[5]
-result_state = sys.argv[6]
-result_url = sys.argv[7]
-result_desc = sys.argv[8]
+# project_owner = sys.argv[1]
+# project_name = sys.argv[2]
+# checker_name = sys.argv[3]
+# checker_token = '8f70a010cd546a4c6f3e61d1cdba5628fb339d4b'
+# commit_SHA = sys.argv[5]
+# result_state = sys.argv[6]
+# result_url = sys.argv[7]
+# result_desc = sys.argv[8]
 
-# project_owner = 'shinnng'
-# project_name = 'Test'
-# checker_name = 'shinnng'
-# checker_token = '78057e50a7e30766507ffdd8fda17224f9c0c400'
-# commit_SHA = '4b86fd00aacb32bbfc6fb0309232595ba8d0feec'
-# result_state = 'failure'
-# result_url = 'http://www.baidu.com'
-# result_desc = 'test'
+project_owner = 'shinnng'
+project_name = 'PlatON-CI'
+checker_name = 'jenkins'
+checker_token = '4f6026be8f416e4d203dd4871df70f1197ae9a82'
+commit_SHA = 'aff10fca4115f07f77821d9eac9fa7516f6b3fee'
+result_state = 'failure'
+result_url = 'http://www.baidu.com'
+result_desc = 'this is a test'
 
 url = 'https://api.github.com/repos/' + project_owner + '/' + project_name + '/statuses/' + commit_SHA
 headers = {'Accept': 'application/vnd.github.antiope-preview+json'}
