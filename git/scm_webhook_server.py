@@ -21,10 +21,12 @@ while True:
     sock, addr = server.accept()
     byte = sock.recv(40960)
     str = bytes.decode(byte)
+    print('str ==========================', str)
     list = str.split('\r\n')
     dict = {}
     dict['method'] = list[0].split(' / ')[0]
     if dict['method'] == 'POST':
+        print("debug1!")
         dict['protocol'] = list[0].split(' / ')[1]
         for param in list[1:-1]:
             if param.find(': ') != -1:
@@ -123,10 +125,12 @@ while True:
             print('Jenkins Response:', response)
 
     elif dict['method'] == 'GET':
+        print("debug2!")
         content = b'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
         print('GET Response: 200')
     else:
+        print("debug3!")
         # content = b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
         content = b'HTTP/1.1 200 ok\r\nContent-Type: text/html\r\n\r\n'
         sock.sendall(content)
